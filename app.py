@@ -242,24 +242,59 @@ class DigitClassifierApp:
         self.confidence_label.config(text="Confidence: --%")
         logger.info("Canvas and drawing buffer cleared.")
 
-    def preprocess_image(self) -> np.ndarray:
+    def preprocess_image(self) -> np.ndarray | None:
         """
         Preprocesses the drawn 280x280 canvas array to match Scikit-Learn Digits dataset format.
 
+        Steps:
+            1. Bounding Box Crop: Finds non-zero pixels and crops to drawing limits.
+            2. Aspect Ratio Preserving Pad & Center: Pads cropped digit into a centered square frame.
+            3. Smooth & Resize: Applies Gaussian blur and resizes down to 8x8 pixels.
+            4. Normalization: Rescales pixel values from [0, 255] to [0, 16] and flattens to 64D vector.
+
         Returns:
-            np.ndarray: A 1D feature vector of shape (1, 64) with pixel values scaled [0, 16].
+            np.ndarray | None: A 1D feature vector of shape (1, 64) with pixel values scaled [0, 16],
+                               or None if the canvas is completely blank.
         """
-        # 1. Downscale 280x280 pixel array to 8x8 using area interpolation
+        # Find coordinates of all non-zero (white drawing) pixels
+        non_zero_pts = cv2.findNonZero(self.image_buffer)
+
+        # Fallback check for empty canvas
+        if non_zero_pts is None:
+            return None
+
+        # 1. Bounding Box Crop
+        x, y, w, h = cv2.boundingRect(non_zero_pts)
+        cropped = self.image_buffer[y:y + h, x:x + w]
+
+        # 2. Aspect Ratio Preserving Pad & Center
+        # Calculate maximum dimension and add padding margin (20%) to keep digit centered
+        max_dim = max(w, h)
+        margin = int(max_dim * 0.20)
+        square_size = max_dim + (2 * margin)
+
+        # Create a black square canvas frame
+        square_canvas = np.zeros((square_size, square_size), dtype=np.uint8)
+
+        # Compute offsets to center the cropped digit inside the square frame
+        offset_x = (square_size - w) // 2
+        offset_y = (square_size - h) // 2
+        square_canvas[offset_y:offset_y + h, offset_x:offset_x + w] = cropped
+
+        # 3. Gaussian Blur to smooth stroke edges from mouse drawing
+        blurred = cv2.GaussianBlur(square_canvas, (3, 3), 0)
+
+        # 4. Downscale centered square image to 8x8 pixels using area interpolation
         resized_image = cv2.resize(
-            self.image_buffer,
+            blurred,
             MODEL_INPUT_SIZE,
             interpolation=cv2.INTER_AREA
         )
 
-        # 2. Rescale pixel intensity values from [0, 255] range to Scikit-Learn's [0, 16] range
+        # 5. Rescale pixel intensity values from [0, 255] to Scikit-Learn Digits range [0, 16]
         scaled_features = (resized_image.astype(np.float64) / 255.0) * 16.0
 
-        # 3. Flatten 8x8 spatial matrix into 1D 64-element feature vector
+        # 6. Flatten 8x8 matrix into 1D 64-element feature vector
         feature_vector = scaled_features.reshape(1, -1)
         return feature_vector
 
@@ -272,14 +307,17 @@ class DigitClassifierApp:
             )
             return
 
-        # Verify drawing exists (canvas non-empty)
-        if np.max(self.image_buffer) == 0:
-            messagebox.showinfo("Empty Canvas", "Please draw a digit on the canvas before predicting.")
-            return
-
         try:
-            # 1. Execute preprocessing pipeline
+            # 1. Execute advanced preprocessing pipeline
             feature_vector = self.preprocess_image()
+
+            # Fallback handling if canvas is blank
+            if feature_vector is None:
+                messagebox.showinfo(
+                    "Empty Canvas",
+                    "Please draw a digit on the canvas before clicking Predict."
+                )
+                return
 
             # 2. Predict digit class
             prediction = int(self.model.predict(feature_vector)[0])
