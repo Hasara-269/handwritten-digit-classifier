@@ -81,6 +81,7 @@ handwritten-digit-classifier/
 ├── .gitignore          # Filters out python bytecode, model binaries, and virtual environments
 ├── LICENSE             # Open-source MIT License terms
 ├── README.md           # Comprehensive technical documentation
+├── app.py              # Interactive Tkinter GUI application for live digit classification
 ├── digit_model.pkl     # Serialized Support Vector Machine binary model weights
 ├── requirements.txt    # Production dependency declarations
 └── train.py            # Machine learning pipeline script (data loading, training, evaluation)
@@ -121,9 +122,14 @@ handwritten-digit-classifier/
    pip install -r requirements.txt
    ```
 
-4. **Run the Machine Learning Pipeline**:
+4. **Run the Machine Learning Training Pipeline**:
    ```bash
    python train.py
+   ```
+
+5. **Launch the Interactive GUI Application**:
+   ```bash
+   python app.py
    ```
 
 ---
