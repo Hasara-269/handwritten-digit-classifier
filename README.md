@@ -6,7 +6,7 @@
 [![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-An end-to-end Supervised Machine Learning pipeline built with **Scikit-Learn** and **OpenCV** designed to classify handwritten digits ($0 \text{--} 9$) with high precision. This project demonstrates production-grade ML engineering patterns including feature matrix transformation, hyperparameter-tuned Support Vector Classification (SVC), model evaluation on unseen test distributions, and binary model serialization.
+An end-to-end Supervised Machine Learning pipeline built with **Scikit-Learn** and **OpenCV** designed to classify handwritten digits ($0 \text{--} 9$) with high precision. This project demonstrates production-grade ML engineering patterns including feature matrix transformation, multi-architecture training (Multi-Layer Perceptron neural network & hyperparameter-tuned SVC via `GridSearchCV`), morphological stroke dilation, min-max intensity scaling, real-time 8x8 input preview, and binary model serialization.
 
 ---
 
@@ -23,17 +23,17 @@ The system executes a deterministic machine learning lifecycle pipeline designed
                                                                    |
                                                                    v
 +------------------+     +-----------------------+     +-----------------------+
-|  Model           |     |  Performance          |     |  Supervised           |
-|  Serialization   | <-- |  Evaluation           | <-- |  Training             |
-|  (digit_model)   |     |  (Accuracy ~98.89%)   |     |  (SVC with RBF Kernel)|
+|  Model           |     |  Performance          |     |  Supervised Training  |
+|  Serialization   | <-- |  Evaluation           | <-- |  & Model Optimization |
+|  (digit_model)   |     |  (Accuracy ~98.89%)   |     |  (MLP & Tuned SVC)    |
 +------------------+     +-----------------------+     +-----------------------+
 ```
 
 1. **Dataset Ingestion**: Automatically ingests Scikit-Learn's standard Digits dataset comprising $1,797$ normalized $8 \times 8$ pixel grayscale images spanning 10 distinct digit classes ($0 \text{--} 9$).
 2. **Feature Engineering**: Flattens 2D spatial pixel matrices ($8 \times 8$) into dense 64-element 1D feature vectors ($\mathbf{x}_i \in \mathbb{R}^{64}$), scaling intensity values for mathematical optimization.
 3. **Dataset Splitting**: Executes an 80/20 train-test split (`test_size=0.2`, `random_state=42`) yielding 1,437 training samples and 360 test samples to ensure an unbiased out-of-sample performance estimation.
-4. **Supervised Model Training**: Trains a Support Vector Classifier (`sklearn.svm.SVC`) employing a Radial Basis Function (RBF) kernel with targeted hyperparameter selection ($\gamma = 0.001$) to construct non-linear decision boundary hyperplanes.
-5. **Model Serialization**: Exports the optimized model state into a lightweight binary weight file (`digit_model.pkl`) using `joblib` serialization for low-latency inference in production.
+4. **Supervised Model Training & Optimization**: Trains and compares a Multi-Layer Perceptron (`MLPClassifier`, hidden layers: 128x64) and a hyperparameter-tuned Support Vector Classifier (`SVC` via `GridSearchCV` with $C=10, \gamma=0.001$).
+5. **Model Serialization**: Exports the top-performing model state into a lightweight binary weight file (`digit_model.pkl`) using `joblib` serialization for low-latency inference in production.
 
 ---
 
@@ -45,8 +45,8 @@ The system executes a deterministic machine learning lifecycle pipeline designed
 | :--- | :--- |
 | **Overall Accuracy** | **98.89%** ($356 / 360$ test instances correctly classified) |
 | **Train / Test Split Ratio** | 80% Train (1,437 samples) / 20% Test (360 samples) |
-| **Kernel Function** | Radial Basis Function (RBF) |
-| **Gamma Hyperparameter ($\gamma$)** | `0.001` |
+| **Evaluated Architectures** | MLPClassifier (128, 64) & Hyperparameter-Tuned SVC ($C=10, \gamma=0.001$) |
+| **Live UI Features** | Bounding box cropping, stroke dilation, min-max [0, 16] scaling & live 8x8 input thumbnail preview |
 
 ### Detailed Classification Breakdown
 
