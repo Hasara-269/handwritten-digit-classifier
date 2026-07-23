@@ -6,7 +6,7 @@
 [![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)](https://numpy.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-An end-to-end Supervised Machine Learning pipeline built with **Scikit-Learn** and **OpenCV** designed to classify handwritten digits ($0 \text{--} 9$) with high precision. This project demonstrates production-grade ML engineering patterns including feature matrix transformation, hyperparameter-tuned Support Vector Classification (SVC), model evaluation on unseen test distributions, and binary model serialization.
+An end-to-end Supervised Machine Learning pipeline built with **Scikit-Learn**, **OpenCV**, and **SciPy** designed to classify handwritten digits ($0 \text{--} 9$) with high precision. Trained on the full **MNIST 784** dataset (28x28 resolution), this project features Center-of-Mass image normalization, Multi-Layer Perceptron neural network classification, real-time 28x28 input thumbnail preview, and binary model serialization.
 
 ---
 
@@ -15,25 +15,25 @@ An end-to-end Supervised Machine Learning pipeline built with **Scikit-Learn** a
 The system executes a deterministic machine learning lifecycle pipeline designed for reproducibility, robustness, and clean separation of concerns:
 
 ```
-+------------------+     +-----------------------+     +-----------------------+
-|  Dataset         |     |  Feature              |     |  Dataset              |
-|  Ingestion       | --> |  Engineering          | --> |  Splitting            |
-|  (1,797 samples) |     |  (8x8 -> 64D Vector)  |     |  (80% Train / 20% Test|
-+------------------+     +-----------------------+     +-----------------------+
-                                                                   |
-                                                                   v
-+------------------+     +-----------------------+     +-----------------------+
-|  Model           |     |  Performance          |     |  Supervised           |
-|  Serialization   | <-- |  Evaluation           | <-- |  Training             |
-|  (digit_model)   |     |  (Accuracy ~98.89%)   |     |  (SVC with RBF Kernel)|
-+------------------+     +-----------------------+     +-----------------------+
++-------------------+     +-----------------------+     +-----------------------+
+|  Dataset          |     |  Feature              |     |  Dataset              |
+|  Ingestion        | --> |  Engineering          | --> |  Splitting            |
+|  (MNIST 70,000)   |     |  (28x28 -> 784 Vector)|     |  (60k Train / 10k Test|
++-------------------+     +-----------------------+     +-----------------------+
+                                                                    |
+                                                                    v
++-------------------+     +-----------------------+     +-----------------------+
+|  Model            |     |  Performance          |     |  Supervised Training  |
+|  Serialization    | <-- |  Evaluation           | <-- |  (MLPClassifier       |
+|  (digit_model)    |     |  (Test Accuracy ~97%) |     |   128x64 Architecture)|
++-------------------+     +-----------------------+     +-----------------------+
 ```
 
-1. **Dataset Ingestion**: Automatically ingests Scikit-Learn's standard Digits dataset comprising $1,797$ normalized $8 \times 8$ pixel grayscale images spanning 10 distinct digit classes ($0 \text{--} 9$).
-2. **Feature Engineering**: Flattens 2D spatial pixel matrices ($8 \times 8$) into dense 64-element 1D feature vectors ($\mathbf{x}_i \in \mathbb{R}^{64}$), scaling intensity values for mathematical optimization.
-3. **Dataset Splitting**: Executes an 80/20 train-test split (`test_size=0.2`, `random_state=42`) yielding 1,437 training samples and 360 test samples to ensure an unbiased out-of-sample performance estimation.
-4. **Supervised Model Training**: Trains a Support Vector Classifier (`sklearn.svm.SVC`) employing a Radial Basis Function (RBF) kernel with targeted hyperparameter selection ($\gamma = 0.001$) to construct non-linear decision boundary hyperplanes.
-5. **Model Serialization**: Exports the optimized model state into a lightweight binary weight file (`digit_model.pkl`) using `joblib` serialization for low-latency inference in production.
+1. **Dataset Ingestion**: Automatically fetches OpenML's `mnist_784` dataset comprising 70,000 normalized $28 \times 28$ pixel grayscale images spanning 10 digit classes ($0 \text{--} 9$).
+2. **Feature Engineering**: Scales pixel intensity values to $[0.0, 1.0]$ float range and flattens spatial matrices into dense 784-element feature vectors ($\mathbf{x}_i \in \mathbb{R}^{784}$).
+3. **Dataset Splitting**: Partitions the dataset into 60,000 training samples and 10,000 test samples for out-of-sample performance evaluation.
+4. **Supervised Model Training**: Trains a Multi-Layer Perceptron neural network (`MLPClassifier`, hidden layers: 128x64, `max_iter=20`, `random_state=42`).
+5. **Model Serialization**: Exports trained network weights to `digit_model.pkl` via `joblib` for real-time inference.
 
 ---
 
@@ -43,10 +43,11 @@ The system executes a deterministic machine learning lifecycle pipeline designed
 
 | Metric | Target Value |
 | :--- | :--- |
-| **Overall Accuracy** | **98.89%** ($356 / 360$ test instances correctly classified) |
-| **Train / Test Split Ratio** | 80% Train (1,437 samples) / 20% Test (360 samples) |
-| **Kernel Function** | Radial Basis Function (RBF) |
-| **Gamma Hyperparameter ($\gamma$)** | `0.001` |
+| **Dataset Resolution** | $28 \times 28$ pixels ($784$ features) |
+| **Train / Test Partition** | 60,000 Training Samples / 10,000 Test Samples |
+| **Model Architecture** | MLPClassifier `(128, 64)`, `max_iter=20`, `random_state=42` |
+| **Pre-processing Normalization** | Bounding box crop (20x20), 28x28 padding, Center-of-Mass shift to (14, 14), float [0.0, 1.0] scaling |
+| **Live UI Debug Preview** | Real-time $28 \times 28$ model input thumbnail display |
 
 ### Detailed Classification Breakdown
 
